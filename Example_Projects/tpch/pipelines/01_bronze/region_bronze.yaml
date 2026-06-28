@@ -1,0 +1,35 @@
+pipeline: tpch_pipeline
+flowgroup: region_bronze
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_region
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: samples
+      schema: tpch
+      table: region
+    target: v_region_src
+    description: "Stream samples.tpch.region"
+
+  - name: write_region_bronze
+    type: write
+    source: v_region_src
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: region
+      table_schema: schemas/bronze/region.yaml
+      comment: "TPC-H region (bronze)"
+      tags:
+        lhp_data_layer: bronze
+        lhp_domain: reference
+        lhp_source_system: tpch_samples
+        lhp_data_product: tpch
+        lhp_owner: data-governance
+        lhp_cost_center: "CC-3000"
+        lhp_sensitivity: public
+        lhp_certified: ""

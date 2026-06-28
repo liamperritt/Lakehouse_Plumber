@@ -1,0 +1,35 @@
+pipeline: tpch_pipeline
+flowgroup: part_bronze
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_part
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: samples
+      schema: tpch
+      table: part
+    target: v_part_src
+    description: "Stream samples.tpch.part"
+
+  - name: write_part_bronze
+    type: write
+    source: v_part_src
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: part
+      table_schema: schemas/bronze/part.yaml
+      comment: "TPC-H part (bronze)"
+      tags:
+        lhp_data_layer: bronze
+        lhp_domain: supply_chain
+        lhp_source_system: tpch_samples
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_cost_center: "CC-2071"
+        lhp_sensitivity: internal
+        lhp_certified: ""

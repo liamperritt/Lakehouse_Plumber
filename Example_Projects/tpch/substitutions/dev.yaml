@@ -1,0 +1,11 @@
+# Substitutions for the `dev` environment (used with `lhp generate --env dev`).
+# Tokens written as {token} in flowgroups/schemas are replaced at generation time.
+#
+# NOTE: `catalog` (set below) is where this project's tables are created — use a
+# UC catalog you can create schemas in. The source `samples.tpch` is read-only.
+dev:
+  env: dev
+  catalog: liam_perritt
+  bronze_schema: tpch_bronze
+  silver_schema: tpch_silver
+  gold_schema: tpch_gold

@@ -1,0 +1,39 @@
+name: partsupp
+version: "1.0"
+description: "TPC-H partsupp (bronze passthrough of samples.tpch.partsupp)"
+
+columns:
+  - name: ps_partkey
+    type: BIGINT
+    nullable: false
+    comment: "Part key - foreign key to part"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: ps_suppkey
+    type: BIGINT
+    nullable: false
+    comment: "Supplier key - foreign key to supplier"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: ps_availqty
+    type: INT
+    nullable: true
+    comment: "Available quantity"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: quantity
+  - name: ps_supplycost
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Supply cost"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: ps_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public

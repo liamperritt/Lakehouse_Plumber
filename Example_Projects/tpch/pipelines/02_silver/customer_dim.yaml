@@ -1,0 +1,51 @@
+pipeline: tpch_pipeline
+flowgroup: customer_dim
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_customer_bronze
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: customer
+    target: v_customer_bronze
+    description: "Stream the bronze customer table"
+
+  - name: cleanse_customer
+    type: transform
+    transform_type: sql
+    source: v_customer_bronze
+    target: v_customer_dim
+    sql: |
+      SELECT
+        CAST(c_custkey AS BIGINT)        AS customer_id,
+        c_name                           AS name,
+        c_address                        AS address,
+        CAST(c_nationkey AS BIGINT)      AS nation_id,
+        c_phone                          AS phone,
+        CAST(c_acctbal AS DECIMAL(18,2)) AS account_balance,
+        c_mktsegment                     AS market_segment
+      FROM stream(v_customer_bronze)
+
+  - name: write_customer_dim
+    type: write
+    source: v_customer_dim
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: customer_dim
+      table_schema: schemas/silver/customer_dim.yaml
+      comment: "Conformed customer dimension"
+      tags:
+        lhp_data_layer: silver
+        lhp_domain: sales
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_sensitivity: confidential
+        lhp_contains_pii: ""
+        lhp_certified: "true"
+        lhp_sla: "daily"

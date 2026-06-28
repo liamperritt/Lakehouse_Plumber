@@ -1,0 +1,62 @@
+pipeline: tpch_pipeline
+flowgroup: customer_order_summary_mv
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_orders_for_summary
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: orders_fct
+    target: v_cos_orders
+  - name: load_customers_for_summary
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: customer_dim
+    target: v_cos_customer
+
+  - name: build_customer_order_summary
+    type: transform
+    transform_type: sql
+    source:
+      - v_cos_orders
+      - v_cos_customer
+    target: v_customer_order_summary
+    sql: |
+      SELECT
+        c.customer_id,
+        c.name,
+        c.market_segment,
+        COUNT(o.order_id)                            AS order_count,
+        CAST(COALESCE(SUM(o.total_price), 0) AS DECIMAL(18,2)) AS lifetime_value
+      FROM v_cos_customer c
+      LEFT JOIN v_cos_orders o ON c.customer_id = o.customer_id
+      GROUP BY c.customer_id, c.name, c.market_segment
+
+  - name: write_customer_order_summary_mv
+    type: write
+    source: v_customer_order_summary
+    write_target:
+      type: materialized_view
+      catalog: "${catalog}"
+      schema: "${gold_schema}"
+      table: customer_order_summary_mv
+      table_schema: schemas/gold/customer_order_summary.yaml
+      comment: "Per-customer order count and lifetime value"
+      tags:
+        lhp_data_layer: gold
+        lhp_domain: sales
+        lhp_data_product: tpch
+        lhp_owner: analytics
+        lhp_audience: bi
+        lhp_sensitivity: confidential
+        lhp_contains_pii: ""
+        lhp_certified: "true"
+        lhp_refresh_cadence: daily

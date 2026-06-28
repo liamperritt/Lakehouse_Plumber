@@ -1,0 +1,8 @@
+# LHP generated output and local state
+generated/
+.lhp_state.json
+.lhp/
+.ruff_cache/
+
+# Bundle artifacts
+.databricks/

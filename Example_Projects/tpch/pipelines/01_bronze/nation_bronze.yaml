@@ -1,0 +1,35 @@
+pipeline: tpch_pipeline
+flowgroup: nation_bronze
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_nation
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: samples
+      schema: tpch
+      table: nation
+    target: v_nation_src
+    description: "Stream samples.tpch.nation"
+
+  - name: write_nation_bronze
+    type: write
+    source: v_nation_src
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: nation
+      table_schema: schemas/bronze/nation.yaml
+      comment: "TPC-H nation (bronze)"
+      tags:
+        lhp_data_layer: bronze
+        lhp_domain: reference
+        lhp_source_system: tpch_samples
+        lhp_data_product: tpch
+        lhp_owner: data-governance
+        lhp_cost_center: "CC-3000"
+        lhp_sensitivity: public
+        lhp_certified: ""

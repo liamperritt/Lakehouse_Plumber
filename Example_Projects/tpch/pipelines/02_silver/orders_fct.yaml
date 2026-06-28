@@ -1,0 +1,49 @@
+pipeline: tpch_pipeline
+flowgroup: orders_fct
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_orders_bronze
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: orders
+    target: v_orders_bronze
+    description: "Stream the bronze orders table"
+
+  - name: build_orders_fct
+    type: transform
+    transform_type: sql
+    source: v_orders_bronze
+    target: v_orders_fct
+    sql: |
+      SELECT
+        CAST(o_orderkey AS BIGINT)         AS order_id,
+        CAST(o_custkey AS BIGINT)          AS customer_id,
+        o_orderstatus                      AS order_status,
+        CAST(o_totalprice AS DECIMAL(18,2)) AS total_price,
+        CAST(o_orderdate AS DATE)          AS order_date,
+        o_orderpriority                    AS order_priority
+      FROM stream(v_orders_bronze)
+
+  - name: write_orders_fct
+    type: write
+    source: v_orders_fct
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: orders_fct
+      table_schema: schemas/silver/orders_fct.yaml
+      comment: "Orders fact"
+      tags:
+        lhp_data_layer: silver
+        lhp_domain: sales
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_sensitivity: internal
+        lhp_certified: "true"
+        lhp_sla: "daily"

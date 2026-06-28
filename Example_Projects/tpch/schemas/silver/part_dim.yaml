@@ -1,0 +1,52 @@
+name: part_dim
+version: "1.0"
+description: "Conformed part dimension (silver)"
+
+columns:
+  - name: part_id
+    type: BIGINT
+    nullable: false
+    comment: "Part business key"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: part_id
+  - name: name
+    type: STRING
+    nullable: true
+    comment: "Part name"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: product_name
+  - name: manufacturer
+    type: STRING
+    nullable: true
+    comment: "Manufacturer"
+    tags:
+      lhp_classification: public
+  - name: brand
+    type: STRING
+    nullable: true
+    comment: "Brand"
+    tags:
+      lhp_classification: public
+  - name: type
+    type: STRING
+    nullable: true
+    comment: "Part type"
+    tags:
+      lhp_classification: public
+  - name: size
+    type: INT
+    nullable: true
+    comment: "Size"
+    tags:
+      lhp_classification: public
+  - name: retail_price
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Retail price"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+
+primary_key: [part_id]

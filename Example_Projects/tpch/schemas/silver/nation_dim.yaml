@@ -1,0 +1,35 @@
+name: nation_dim
+version: "1.0"
+description: "Conformed nation dimension (silver), enriched with region name"
+
+columns:
+  - name: nation_id
+    type: BIGINT
+    nullable: false
+    comment: "Nation business key"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: nation_id
+  - name: nation_name
+    type: STRING
+    nullable: true
+    comment: "Nation name"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: nation_name
+  - name: region_id
+    type: BIGINT
+    nullable: false
+    comment: "Region foreign key"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: region_name
+    type: STRING
+    nullable: true
+    comment: "Region name (denormalized from region)"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: region_name
+
+primary_key: [nation_id]

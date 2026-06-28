@@ -1,0 +1,111 @@
+name: lineitem
+version: "1.0"
+description: "TPC-H lineitem (bronze passthrough of samples.tpch.lineitem)"
+
+columns:
+  - name: l_orderkey
+    type: BIGINT
+    nullable: false
+    comment: "Order key - foreign key to orders"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: l_partkey
+    type: BIGINT
+    nullable: false
+    comment: "Part key - foreign key to part"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: l_suppkey
+    type: BIGINT
+    nullable: false
+    comment: "Supplier key - foreign key to supplier"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: l_linenumber
+    type: INT
+    nullable: false
+    comment: "Line number within the order"
+    tags:
+      lhp_classification: identifier
+  - name: l_quantity
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Quantity ordered"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: quantity
+  - name: l_extendedprice
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Extended price"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: l_discount
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Discount rate"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: rate
+  - name: l_tax
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Tax rate"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: rate
+  - name: l_returnflag
+    type: STRING
+    nullable: true
+    comment: "Return flag"
+    tags:
+      lhp_classification: public
+  - name: l_linestatus
+    type: STRING
+    nullable: true
+    comment: "Line status"
+    tags:
+      lhp_classification: public
+  - name: l_shipdate
+    type: DATE
+    nullable: true
+    comment: "Ship date"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: event_date
+  - name: l_commitdate
+    type: DATE
+    nullable: true
+    comment: "Commit date"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: event_date
+  - name: l_receiptdate
+    type: DATE
+    nullable: true
+    comment: "Receipt date"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: event_date
+  - name: l_shipinstruct
+    type: STRING
+    nullable: true
+    comment: "Shipping instructions"
+    tags:
+      lhp_classification: public
+  - name: l_shipmode
+    type: STRING
+    nullable: true
+    comment: "Ship mode"
+    tags:
+      lhp_classification: public
+  - name: l_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public

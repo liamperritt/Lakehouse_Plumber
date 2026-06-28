@@ -1,0 +1,62 @@
+name: customer_dim
+version: "1.0"
+description: "Conformed customer dimension (silver)"
+
+columns:
+  - name: customer_id
+    type: BIGINT
+    nullable: false
+    comment: "Customer surrogate/business key"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: customer_id
+  - name: name
+    type: STRING
+    nullable: false
+    comment: "Customer name"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: person_name
+      lhp_masking_policy: mask_full
+      lhp_contains_pii: ""
+  - name: address
+    type: STRING
+    nullable: true
+    comment: "Customer address"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: postal_address
+      lhp_masking_policy: mask_full
+      lhp_contains_pii: ""
+  - name: nation_id
+    type: BIGINT
+    nullable: false
+    comment: "Nation foreign key"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: phone
+    type: STRING
+    nullable: true
+    comment: "Phone number"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: phone_number
+      lhp_masking_policy: mask_partial
+      lhp_contains_pii: ""
+  - name: account_balance
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Account balance"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: market_segment
+    type: STRING
+    nullable: true
+    comment: "Market segment"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: segment
+
+primary_key: [customer_id]

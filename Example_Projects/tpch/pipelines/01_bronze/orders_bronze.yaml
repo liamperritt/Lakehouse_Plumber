@@ -1,0 +1,35 @@
+pipeline: tpch_pipeline
+flowgroup: orders_bronze
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_orders
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: samples
+      schema: tpch
+      table: orders
+    target: v_orders_src
+    description: "Stream samples.tpch.orders"
+
+  - name: write_orders_bronze
+    type: write
+    source: v_orders_src
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: orders
+      table_schema: schemas/bronze/orders.yaml
+      comment: "TPC-H orders (bronze)"
+      tags:
+        lhp_data_layer: bronze
+        lhp_domain: sales
+        lhp_source_system: tpch_samples
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_cost_center: "CC-1042"
+        lhp_sensitivity: internal
+        lhp_certified: ""

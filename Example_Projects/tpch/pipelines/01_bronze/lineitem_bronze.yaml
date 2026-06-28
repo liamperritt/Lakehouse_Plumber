@@ -1,0 +1,35 @@
+pipeline: tpch_pipeline
+flowgroup: lineitem_bronze
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_lineitem
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: samples
+      schema: tpch
+      table: lineitem
+    target: v_lineitem_src
+    description: "Stream samples.tpch.lineitem"
+
+  - name: write_lineitem_bronze
+    type: write
+    source: v_lineitem_src
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: lineitem
+      table_schema: schemas/bronze/lineitem.yaml
+      comment: "TPC-H lineitem (bronze)"
+      tags:
+        lhp_data_layer: bronze
+        lhp_domain: sales
+        lhp_source_system: tpch_samples
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_cost_center: "CC-1042"
+        lhp_sensitivity: internal
+        lhp_certified: ""

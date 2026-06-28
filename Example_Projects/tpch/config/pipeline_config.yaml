@@ -1,0 +1,13 @@
+# Pipeline configuration for the Databricks Asset Bundle resource generation.
+# project_defaults applies to every pipeline; per-pipeline docs override.
+project_defaults:
+  catalog: "${catalog}"
+  schema: "${bronze_schema}"
+  serverless: true
+  channel: CURRENT
+
+---
+pipeline: tpch_pipeline
+catalog: "${catalog}"
+schema: "${bronze_schema}"
+serverless: true

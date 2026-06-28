@@ -1,0 +1,50 @@
+pipeline: tpch_pipeline
+flowgroup: supplier_dim
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_supplier_bronze
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: supplier
+    target: v_supplier_bronze
+    description: "Stream the bronze supplier table"
+
+  - name: cleanse_supplier
+    type: transform
+    transform_type: sql
+    source: v_supplier_bronze
+    target: v_supplier_dim
+    sql: |
+      SELECT
+        CAST(s_suppkey AS BIGINT)        AS supplier_id,
+        s_name                           AS name,
+        s_address                        AS address,
+        CAST(s_nationkey AS BIGINT)      AS nation_id,
+        s_phone                          AS phone,
+        CAST(s_acctbal AS DECIMAL(18,2)) AS account_balance
+      FROM stream(v_supplier_bronze)
+
+  - name: write_supplier_dim
+    type: write
+    source: v_supplier_dim
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: supplier_dim
+      table_schema: schemas/silver/supplier_dim.yaml
+      comment: "Conformed supplier dimension"
+      tags:
+        lhp_data_layer: silver
+        lhp_domain: supply_chain
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_sensitivity: confidential
+        lhp_contains_pii: ""
+        lhp_certified: "true"
+        lhp_sla: "daily"

@@ -1,0 +1,48 @@
+name: orders_fct
+version: "1.0"
+description: "Orders fact (silver)"
+
+columns:
+  - name: order_id
+    type: BIGINT
+    nullable: false
+    comment: "Order business key"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: order_id
+  - name: customer_id
+    type: BIGINT
+    nullable: false
+    comment: "Customer foreign key"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: order_status
+    type: STRING
+    nullable: true
+    comment: "Order status"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: status_code
+  - name: total_price
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Total order price"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: order_date
+    type: DATE
+    nullable: true
+    comment: "Order date"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: event_date
+  - name: order_priority
+    type: STRING
+    nullable: true
+    comment: "Order priority"
+    tags:
+      lhp_classification: public
+
+primary_key: [order_id]

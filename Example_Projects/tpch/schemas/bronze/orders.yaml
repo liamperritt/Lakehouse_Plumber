@@ -1,0 +1,67 @@
+name: orders
+version: "1.0"
+description: "TPC-H orders (bronze passthrough of samples.tpch.orders)"
+
+columns:
+  - name: o_orderkey
+    type: BIGINT
+    nullable: false
+    comment: "Order key - primary identifier"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: order_id
+  - name: o_custkey
+    type: BIGINT
+    nullable: false
+    comment: "Customer key - foreign key to customer"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: o_orderstatus
+    type: STRING
+    nullable: true
+    comment: "Order status (O/F/P)"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: status_code
+  - name: o_totalprice
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Total order price"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: o_orderdate
+    type: DATE
+    nullable: true
+    comment: "Order date"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: event_date
+  - name: o_orderpriority
+    type: STRING
+    nullable: true
+    comment: "Order priority"
+    tags:
+      lhp_classification: public
+  - name: o_clerk
+    type: STRING
+    nullable: true
+    comment: "Clerk who handled the order"
+    tags:
+      lhp_classification: internal
+      lhp_semantic_type: employee_id
+  - name: o_shippriority
+    type: INT
+    nullable: true
+    comment: "Ship priority"
+    tags:
+      lhp_classification: public
+  - name: o_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public
+
+primary_key: [o_orderkey]

@@ -1,0 +1,63 @@
+pipeline: tpch_pipeline
+flowgroup: nation_dim
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_nation_bronze
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: nation
+    target: v_nation_bronze
+    description: "Stream the bronze nation table"
+
+  # Static lookup (batch) for a stream-static join to denormalize the region name.
+  - name: load_region_lookup
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: region
+    target: v_region_lookup
+    description: "Batch lookup of region for stream-static join"
+
+  - name: build_nation_dim
+    type: transform
+    transform_type: sql
+    source:
+      - v_nation_bronze
+      - v_region_lookup
+    target: v_nation_dim
+    sql: |
+      SELECT
+        CAST(n.n_nationkey AS BIGINT) AS nation_id,
+        n.n_name                      AS nation_name,
+        CAST(n.n_regionkey AS BIGINT) AS region_id,
+        r.r_name                      AS region_name
+      FROM stream(v_nation_bronze) n
+      LEFT JOIN v_region_lookup r
+        ON n.n_regionkey = r.r_regionkey
+
+  - name: write_nation_dim
+    type: write
+    source: v_nation_dim
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: nation_dim
+      table_schema: schemas/silver/nation_dim.yaml
+      comment: "Conformed nation dimension (region denormalized)"
+      tags:
+        lhp_data_layer: silver
+        lhp_domain: reference
+        lhp_data_product: tpch
+        lhp_owner: data-governance
+        lhp_sensitivity: public
+        lhp_certified: "true"
+        lhp_sla: "weekly"

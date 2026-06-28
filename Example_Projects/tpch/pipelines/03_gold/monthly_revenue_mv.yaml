@@ -1,0 +1,47 @@
+pipeline: tpch_pipeline
+flowgroup: monthly_revenue_mv
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_lineitem_for_monthly
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: lineitem_fct
+    target: v_mr_lineitem
+
+  - name: build_monthly_revenue
+    type: transform
+    transform_type: sql
+    source: v_mr_lineitem
+    target: v_monthly_revenue
+    sql: |
+      SELECT
+        DATE_TRUNC('MONTH', ship_date)        AS ship_month,
+        CAST(SUM(net_amount) AS DECIMAL(18,2)) AS revenue,
+        CAST(SUM(quantity) AS DECIMAL(18,2))   AS units
+      FROM v_mr_lineitem
+      WHERE ship_date IS NOT NULL
+      GROUP BY DATE_TRUNC('MONTH', ship_date)
+
+  - name: write_monthly_revenue_mv
+    type: write
+    source: v_monthly_revenue
+    write_target:
+      type: materialized_view
+      catalog: "${catalog}"
+      schema: "${gold_schema}"
+      table: monthly_revenue_mv
+      comment: "Monthly shipped revenue and units"
+      tags:
+        lhp_data_layer: gold
+        lhp_domain: sales
+        lhp_data_product: tpch
+        lhp_owner: analytics
+        lhp_audience: bi
+        lhp_sensitivity: internal
+        lhp_certified: "true"
+        lhp_refresh_cadence: daily

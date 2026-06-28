@@ -1,0 +1,31 @@
+# Databricks Asset Bundle for the TPC-H tagging demo.
+# `lhp generate --env dev` writes the pipeline resource under resources/lhp/.
+# Deploy with:  databricks bundle deploy -t dev   then   databricks bundle run tpch_pipeline_pipeline -t dev
+# See https://docs.databricks.com/dev-tools/bundles/index.html
+bundle:
+  name: tpch_tagging_demo
+
+include:
+  # LHP-managed pipeline resource files (generated into resources/lhp/)
+  - resources/lhp/*.yml
+  # User-managed resource files
+  - resources/*.yml
+
+variables:
+  # Default catalog/schema for the generated SDP pipeline resource. Keep these
+  # aligned with substitutions/<env>.yaml so the pipeline's default namespace
+  # matches the fully-qualified table names baked into the generated code.
+  default_pipeline_catalog:
+    default: liam_perritt
+  default_pipeline_schema:
+    default: tpch_bronze
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-984752964297111.11.azuredatabricks.net
+    variables:
+      default_pipeline_catalog: liam_perritt
+      default_pipeline_schema: tpch_bronze

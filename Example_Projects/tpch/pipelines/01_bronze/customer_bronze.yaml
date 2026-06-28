@@ -1,0 +1,36 @@
+pipeline: tpch_pipeline
+flowgroup: customer_bronze
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_customer
+    type: load
+    readMode: stream
+    source:
+      type: delta
+      catalog: samples
+      schema: tpch
+      table: customer
+    target: v_customer_src
+    description: "Stream samples.tpch.customer"
+
+  - name: write_customer_bronze
+    type: write
+    source: v_customer_src
+    write_target:
+      type: streaming_table
+      catalog: "${catalog}"
+      schema: "${bronze_schema}"
+      table: customer
+      table_schema: schemas/bronze/customer.yaml
+      comment: "TPC-H customer (bronze)"
+      tags:
+        lhp_data_layer: bronze
+        lhp_domain: sales
+        lhp_source_system: tpch_samples
+        lhp_data_product: tpch
+        lhp_owner: data-engineering
+        lhp_cost_center: "CC-1042"
+        lhp_sensitivity: confidential
+        lhp_contains_pii: ""
+        lhp_certified: ""

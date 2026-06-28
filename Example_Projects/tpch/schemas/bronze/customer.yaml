@@ -1,0 +1,68 @@
+name: customer
+version: "1.0"
+description: "TPC-H customer (bronze passthrough of samples.tpch.customer)"
+
+columns:
+  - name: c_custkey
+    type: BIGINT
+    nullable: false
+    comment: "Customer key - primary identifier"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: customer_id
+  - name: c_name
+    type: STRING
+    nullable: false
+    comment: "Customer name"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: person_name
+      lhp_masking_policy: mask_full
+      lhp_contains_pii: ""
+  - name: c_address
+    type: STRING
+    nullable: true
+    comment: "Customer street address"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: postal_address
+      lhp_masking_policy: mask_full
+      lhp_contains_pii: ""
+  - name: c_nationkey
+    type: BIGINT
+    nullable: false
+    comment: "Nation key - foreign key to nation"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: c_phone
+    type: STRING
+    nullable: true
+    comment: "Customer phone number"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: phone_number
+      lhp_masking_policy: mask_partial
+      lhp_contains_pii: ""
+  - name: c_acctbal
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Account balance"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: c_mktsegment
+    type: STRING
+    nullable: true
+    comment: "Market segment"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: segment
+  - name: c_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public
+
+primary_key: [c_custkey]

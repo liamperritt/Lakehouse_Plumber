@@ -1,0 +1,68 @@
+name: lineitem_fct
+version: "1.0"
+description: "Line item fact (silver), with derived net amount"
+
+columns:
+  - name: order_id
+    type: BIGINT
+    nullable: false
+    comment: "Order foreign key"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: part_id
+    type: BIGINT
+    nullable: false
+    comment: "Part foreign key"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: supplier_id
+    type: BIGINT
+    nullable: false
+    comment: "Supplier foreign key"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: line_number
+    type: INT
+    nullable: false
+    comment: "Line number within the order"
+    tags:
+      lhp_classification: identifier
+  - name: quantity
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Quantity ordered"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: quantity
+  - name: extended_price
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Extended price"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: discount
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Discount rate"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: rate
+  - name: net_amount
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Derived: extended_price * (1 - discount)"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+      lhp_derived: "true"
+  - name: ship_date
+    type: DATE
+    nullable: true
+    comment: "Ship date"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: event_date

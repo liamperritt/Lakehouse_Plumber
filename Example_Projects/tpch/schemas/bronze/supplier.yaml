@@ -1,0 +1,58 @@
+name: supplier
+version: "1.0"
+description: "TPC-H supplier (bronze passthrough of samples.tpch.supplier)"
+
+columns:
+  - name: s_suppkey
+    type: BIGINT
+    nullable: false
+    comment: "Supplier key - primary identifier"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: supplier_id
+  - name: s_name
+    type: STRING
+    nullable: true
+    comment: "Supplier name"
+    tags:
+      lhp_classification: confidential
+      lhp_semantic_type: company_name
+  - name: s_address
+    type: STRING
+    nullable: true
+    comment: "Supplier address"
+    tags:
+      lhp_classification: confidential
+      lhp_semantic_type: postal_address
+      lhp_masking_policy: mask_full
+  - name: s_nationkey
+    type: BIGINT
+    nullable: false
+    comment: "Nation key - foreign key to nation"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: s_phone
+    type: STRING
+    nullable: true
+    comment: "Supplier phone number"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: phone_number
+      lhp_masking_policy: mask_partial
+      lhp_contains_pii: ""
+  - name: s_acctbal
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Account balance"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: s_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public
+
+primary_key: [s_suppkey]

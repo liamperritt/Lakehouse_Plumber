@@ -1,0 +1,27 @@
+name: region
+version: "1.0"
+description: "TPC-H region (bronze passthrough of samples.tpch.region)"
+
+columns:
+  - name: r_regionkey
+    type: BIGINT
+    nullable: false
+    comment: "Region key - primary identifier"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: region_id
+  - name: r_name
+    type: STRING
+    nullable: true
+    comment: "Region name"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: region_name
+  - name: r_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public
+
+primary_key: [r_regionkey]

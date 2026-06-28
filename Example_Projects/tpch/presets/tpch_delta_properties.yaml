@@ -1,0 +1,14 @@
+name: "tpch_delta_properties"
+version: "1.0"
+description: "Default Delta properties for TPC-H streaming tables and materialized views"
+
+defaults:
+  write_actions:
+    streaming_table:
+      table_properties:
+        delta.enableChangeDataFeed: "true"
+        delta.autoOptimize.optimizeWrite: "true"
+        delta.autoOptimize.autoCompact: "true"
+    materialized_view:
+      table_properties:
+        delta.enableChangeDataFeed: "false"

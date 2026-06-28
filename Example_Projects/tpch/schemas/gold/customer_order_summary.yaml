@@ -1,0 +1,42 @@
+name: customer_order_summary
+version: "1.0"
+description: "Per-customer order summary (gold). Column tags exercise MV-level tagging."
+
+columns:
+  - name: customer_id
+    type: BIGINT
+    nullable: false
+    comment: "Customer business key"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: customer_id
+  - name: name
+    type: STRING
+    nullable: true
+    comment: "Customer name"
+    tags:
+      lhp_classification: pii
+      lhp_semantic_type: person_name
+      lhp_masking_policy: mask_full
+      lhp_contains_pii: ""
+  - name: market_segment
+    type: STRING
+    nullable: true
+    comment: "Market segment"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: segment
+  - name: order_count
+    type: BIGINT
+    nullable: true
+    comment: "Number of orders placed"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: count
+  - name: lifetime_value
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Total spend across all orders"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money

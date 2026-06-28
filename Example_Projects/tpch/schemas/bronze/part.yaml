@@ -1,0 +1,64 @@
+name: part
+version: "1.0"
+description: "TPC-H part (bronze passthrough of samples.tpch.part)"
+
+columns:
+  - name: p_partkey
+    type: BIGINT
+    nullable: false
+    comment: "Part key - primary identifier"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: part_id
+  - name: p_name
+    type: STRING
+    nullable: true
+    comment: "Part name"
+    tags:
+      lhp_classification: public
+      lhp_semantic_type: product_name
+  - name: p_mfgr
+    type: STRING
+    nullable: true
+    comment: "Manufacturer"
+    tags:
+      lhp_classification: public
+  - name: p_brand
+    type: STRING
+    nullable: true
+    comment: "Brand"
+    tags:
+      lhp_classification: public
+  - name: p_type
+    type: STRING
+    nullable: true
+    comment: "Part type"
+    tags:
+      lhp_classification: public
+  - name: p_size
+    type: INT
+    nullable: true
+    comment: "Size"
+    tags:
+      lhp_classification: public
+  - name: p_container
+    type: STRING
+    nullable: true
+    comment: "Container"
+    tags:
+      lhp_classification: public
+  - name: p_retailprice
+    type: DECIMAL(18,2)
+    nullable: true
+    comment: "Retail price"
+    tags:
+      lhp_classification: financial
+      lhp_semantic_type: money
+  - name: p_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public
+
+primary_key: [p_partkey]

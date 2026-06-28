@@ -1,0 +1,34 @@
+name: nation
+version: "1.0"
+description: "TPC-H nation (bronze passthrough of samples.tpch.nation)"
+
+columns:
+  - name: n_nationkey
+    type: BIGINT
+    nullable: false
+    comment: "Nation key - primary identifier"
+    tags:
+      lhp_classification: identifier
+      lhp_semantic_type: nation_id
+  - name: n_name
+    type: STRING
+    nullable: true
+    comment: "Nation name"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: nation_name
+  - name: n_regionkey
+    type: BIGINT
+    nullable: false
+    comment: "Region key - foreign key to region"
+    tags:
+      lhp_classification: reference
+      lhp_semantic_type: foreign_key
+  - name: n_comment
+    type: STRING
+    nullable: true
+    comment: "Free-form comment"
+    tags:
+      lhp_classification: public
+
+primary_key: [n_nationkey]

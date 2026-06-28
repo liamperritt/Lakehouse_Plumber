@@ -1,0 +1,81 @@
+pipeline: tpch_pipeline
+flowgroup: revenue_by_nation_mv
+presets:
+  - tpch_delta_properties
+actions:
+  - name: load_lineitem_fct
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: lineitem_fct
+    target: v_rbn_lineitem
+  - name: load_orders_fct
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: orders_fct
+    target: v_rbn_orders
+  - name: load_customer_dim
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: customer_dim
+    target: v_rbn_customer
+  - name: load_nation_dim
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      catalog: "${catalog}"
+      schema: "${silver_schema}"
+      table: nation_dim
+    target: v_rbn_nation
+
+  - name: build_revenue_by_nation
+    type: transform
+    transform_type: sql
+    source:
+      - v_rbn_lineitem
+      - v_rbn_orders
+      - v_rbn_customer
+      - v_rbn_nation
+    target: v_revenue_by_nation
+    sql: |
+      SELECT
+        n.nation_name,
+        n.region_name,
+        COUNT(DISTINCT o.order_id) AS order_count,
+        SUM(li.net_amount)         AS total_revenue
+      FROM v_rbn_lineitem li
+      JOIN v_rbn_orders o  ON li.order_id = o.order_id
+      JOIN v_rbn_customer c ON o.customer_id = c.customer_id
+      JOIN v_rbn_nation n  ON c.nation_id = n.nation_id
+      GROUP BY n.nation_name, n.region_name
+
+  - name: write_revenue_by_nation_mv
+    type: write
+    source: v_revenue_by_nation
+    write_target:
+      type: materialized_view
+      catalog: "${catalog}"
+      schema: "${gold_schema}"
+      table: revenue_by_nation_mv
+      comment: "Total revenue and order count by nation"
+      tags:
+        lhp_data_layer: gold
+        lhp_domain: sales
+        lhp_data_product: tpch
+        lhp_owner: analytics
+        lhp_audience: bi
+        lhp_sensitivity: internal
+        lhp_certified: "true"
+        lhp_refresh_cadence: daily

@@ -1,0 +1,21 @@
+# LakehousePlumber Project Configuration
+# TPC-H tagging stress-test project. Builds a medallion pipeline on top of the
+# `samples.tpch` dataset (available in every Databricks metastore) and decorates
+# every table and many columns with Unity Catalog tags to exercise the LHP
+# UC-tagging event hook (see `uc_tagging` below).
+name: tpch_tagging_demo
+version: "1.0"
+description: "TPC-H medallion pipeline with extensive Unity Catalog tagging"
+author: "Lakehouse Plumber"
+created_date: "2026-06-27"
+
+# Unity Catalog tagging is ON by default — just declare `tags` on tables/columns.
+# This block is optional; here it switches on reconcile mode. The generated
+# _uc_tagging_hook.py applies declared table/column tags via the Entity Tag
+# Assignments REST API during the run (on update_progress RUNNING for tables and
+# the terminal state for materialized views), so failures surface as event-log
+# warnings without ever failing the pipeline.
+# remove_undeclared_tags: true reconciles (deletes tags not declared here) instead
+# of additive-only. Set enabled: false to disable the feature entirely.
+uc_tagging:
+  remove_undeclared_tags: true
