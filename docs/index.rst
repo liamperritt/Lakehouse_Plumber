@@ -97,6 +97,7 @@ want to understand the execution model first, read :doc:`architecture`.
    :caption: Get Started
 
    quickstart
+   tutorials/sample_quickstart
    editor_setup
    requirements
 
@@ -115,6 +116,7 @@ want to understand the execution model first, read :doc:`architecture`.
    configure_bundles
    package_pipelines_as_wheels
    configure_catalog_schema
+   develop_in_a_sandbox
    enable_monitoring
    quarantine_records
    migrate_from_dlt
@@ -144,6 +146,7 @@ want to understand the execution model first, read :doc:`architecture`.
    presets_reference
    blueprints
    bundle_config_reference
+   sandbox_reference
    monitoring_reference
    dependency_analysis
    quarantine
