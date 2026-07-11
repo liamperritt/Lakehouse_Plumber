@@ -17,7 +17,7 @@ from lhp.core.processing.odcs_translator import OdcsTranslator, SchemaArtifact
 from lhp.errors import LHPError
 from lhp.parsers.odcs_parser import OdcsParser
 from lhp.parsers.schema_parser import SchemaParser
-from lhp.utils.odcs_mapper import odcs_type_to_spark
+from lhp.utils.odcs_mapper import odcs_tags_to_uc, odcs_type_to_spark
 
 # ---------------------------------------------------------------------------
 # Fixture helpers
@@ -282,6 +282,36 @@ class TestOdcsParser:
 # ---------------------------------------------------------------------------
 
 
+class TestOdcsTagsToUc:
+    def test_key_only_tag(self):
+        assert odcs_tags_to_uc({"tags": ["pii"]}) == {"pii": ""}
+
+    def test_key_value_tag_splits_on_first_colon(self):
+        assert odcs_tags_to_uc({"tags": ["domain:sales"]}) == {"domain": "sales"}
+
+    def test_value_may_contain_further_colons(self):
+        assert odcs_tags_to_uc({"tags": ["note:a:b"]}) == {"note": "a:b"}
+
+    def test_whitespace_is_stripped_from_both_sides(self):
+        assert odcs_tags_to_uc({"tags": [" domain : sales "]}) == {"domain": "sales"}
+
+    def test_mixed_array_of_key_only_and_key_value(self):
+        assert odcs_tags_to_uc(
+            {"tags": ["pii", "domain:sales", "classification:confidential"]}
+        ) == {"pii": "", "domain": "sales", "classification": "confidential"}
+
+    def test_later_duplicate_key_overwrites(self):
+        assert odcs_tags_to_uc({"tags": ["k:a", "k:b"]}) == {"k": "b"}
+
+    def test_absent_tags_yields_empty(self):
+        assert odcs_tags_to_uc({}) == {}
+        assert odcs_tags_to_uc({"tags": None}) == {}
+        assert odcs_tags_to_uc({"tags": []}) == {}
+
+    def test_trailing_colon_yields_empty_value(self):
+        assert odcs_tags_to_uc({"tags": ["k:"]}) == {"k": ""}
+
+
 class TestOdcsTranslator:
     def _translate(self, contract_yaml, stem):
         contract = yaml.safe_load(contract_yaml)
@@ -344,6 +374,36 @@ class TestOdcsTranslator:
         artifacts = self._translate(VALID_CONTRACT_YAML, "sales")
         customers = next(a for a in artifacts if a.object_name == "customers")
         assert "primary_key" not in customers.schema_dict
+
+    def test_column_tags_present_only_for_tagged_properties(self):
+        contract = {
+            "version": "1.0.0",
+            "apiVersion": "v3.0.2",
+            "kind": "DataContract",
+            "id": "id",
+            "status": "active",
+            "name": "c",
+            "schema": [
+                {
+                    "name": "orders",
+                    "properties": [
+                        {
+                            "name": "order_id",
+                            "physicalType": "BIGINT",
+                            "tags": ["semantic:identifier", "pii"],
+                        },
+                        {"name": "status", "logicalType": "string"},
+                    ],
+                }
+            ],
+        }
+        artifacts = OdcsTranslator().translate_schemas(contract, contract_stem="c")
+        cols = {c["name"]: c for c in artifacts[0].schema_dict["columns"]}
+
+        # Tagged property → parsed UC column tags (key-value + key-only).
+        assert cols["order_id"]["tags"] == {"semantic": "identifier", "pii": ""}
+        # Untagged property → no `tags` key at all (stays unmanaged).
+        assert "tags" not in cols["status"]
 
     def test_primary_key_ordered_by_position(self):
         contract = {

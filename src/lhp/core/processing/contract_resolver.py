@@ -10,7 +10,9 @@ Injection is implicit by action type:
   - cloudfiles **load**        → ``source.schema`` (enforced read schema, inline DDL);
     or, when ``schema_hints`` is set, ``cloudFiles.schemaHints`` **instead** (hints-only,
     never both)
-  - **write** (streaming_table / materialized_view) → ``write_target.table_schema`` (inline DDL)
+  - **write** (streaming_table / materialized_view) → ``write_target.table_schema``
+    (inline structured schema dict, carrying per-column UC ``tags``) plus, when the
+    ODCS object/properties declare ``tags``, table-level ``write_target.tags``
   - **schema** transform       → ``schema_inline`` (cast-only ``<col>: <type>`` entries)
   - **data_quality** transform → inline ``expectations`` (list form), action from
     ``expectations_action`` else per-property ``criticalDataElement``
@@ -31,7 +33,11 @@ import yaml
 from ...errors import ErrorFactory, LHPError, codes
 from ...parsers.odcs_parser import OdcsParser
 from ...parsers.schema_parser import SchemaParser
-from ...utils.odcs_mapper import odcs_property_to_constraints, odcs_quality_to_tests
+from ...utils.odcs_mapper import (
+    odcs_property_to_constraints,
+    odcs_quality_to_tests,
+    odcs_tags_to_uc,
+)
 from .odcs_translator import OdcsTranslator
 
 logger = logging.getLogger(__name__)
@@ -158,7 +164,9 @@ class ContractResolver:
                 action_name,
             )
         elif action_kind == "write":
-            self._inject_write(action, obj, contract_stem, action_name)
+            self._inject_write(
+                action, obj, contract_stem, action_name, contract_dict.get("version")
+            )
         elif action_kind == "schema_transform":
             self._inject_schema_transform(action, obj, action_name)
         elif action_kind == "data_quality":
@@ -402,12 +410,34 @@ class ContractResolver:
         obj: Dict[str, Any],
         contract_stem: str,
         action_name: str,
+        version: Optional[str] = None,
     ) -> None:
+        """Inject the entity's schema (inline) and UC tags into the write target.
+
+        ``table_schema`` is set to the translator's **inline structured schema
+        dict** (not a DDL string), so the per-column ``tags`` derived from the
+        ODCS property ``tags`` ride along and reach the UC tagging hook (which
+        reads ``columns[].tags`` from an inline-dict ``table_schema``). At code
+        generation time this dict resolves to the same DDL a string would have,
+        so the created table's schema is unchanged.
+
+        Table-level UC tags (from the ODCS schema object's ``tags``) are **merged**
+        into ``write_target.tags`` — additive, with any explicit user-declared
+        tags taking precedence over contract-derived ones.
+        """
         target = action.setdefault("write_target", {})
         if target.get("table_schema"):
             raise self._conflict(action_name, "write_target.table_schema")
 
-        target["table_schema"] = self._entity_ddl(obj, contract_stem)
+        artifacts = self._translator.translate_schemas(
+            {"version": version, "schema": [obj]}, contract_stem=contract_stem
+        )
+        target["table_schema"] = artifacts[0].schema_dict
+
+        table_tags = odcs_tags_to_uc(obj)
+        if table_tags:
+            existing = target.get("tags") or {}
+            target["tags"] = {**table_tags, **existing}
 
     def _inject_schema_transform(
         self, action: Dict[str, Any], obj: Dict[str, Any], action_name: str

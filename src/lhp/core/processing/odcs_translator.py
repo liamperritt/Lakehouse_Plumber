@@ -14,7 +14,11 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from ...utils.odcs_mapper import odcs_property_to_constraints, odcs_type_to_spark
+from ...utils.odcs_mapper import (
+    odcs_property_to_constraints,
+    odcs_tags_to_uc,
+    odcs_type_to_spark,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +89,13 @@ class OdcsTranslator:
                     column["comment"] = prop["description"]
                 if prop.get("physicalName"):
                     column["physical_name"] = prop["physicalName"]
+                # ODCS property `tags` -> Unity Catalog column tags. Only attach
+                # when non-empty: a present-but-empty `tags` key signals
+                # "managed with empty set" to the UC tagging hook, which we must
+                # not imply for a property that declared no tags.
+                col_tags = odcs_tags_to_uc(prop)
+                if col_tags:
+                    column["tags"] = col_tags
                 columns.append(column)
 
             schema_dict: Dict[str, Any] = {

@@ -32,8 +32,21 @@ from lhp.errors import LHPError
 # Fixtures
 # ---------------------------------------------------------------------------
 
-# Expected DDL string the resolver inlines (from SchemaParser.to_schema_hints).
+# Expected DDL string the resolver inlines for the cloudfiles read schema /
+# schemaHints (from SchemaParser.to_schema_hints).
 EXPECTED_DDL = "order_id BIGINT NOT NULL, status STRING"
+
+# Expected inline structured schema dict the resolver inlines into a write's
+# ``write_target.table_schema`` (the translator's SchemaArtifact.schema_dict).
+# This resolves to EXPECTED_DDL at code-generation time via to_schema_hints.
+EXPECTED_WRITE_SCHEMA = {
+    "name": "orders",
+    "version": "1.0.0",
+    "columns": [
+        {"name": "order_id", "type": "BIGINT", "nullable": False},
+        {"name": "status", "type": "STRING", "nullable": True},
+    ],
+}
 
 # A single-object ODCS contract: ``orders`` with a CDE integer + a string.
 SINGLE_OBJECT_CONTRACT = textwrap.dedent(
@@ -164,6 +177,36 @@ SPACED_PHYSICAL_NAME_CONTRACT = textwrap.dedent(
             logicalType: integer
             physicalType: BIGINT
             required: true
+          - name: status
+            logicalType: string
+    """
+).strip()
+
+
+# A single-object ``orders`` contract carrying ODCS ``tags`` at both the object
+# level (→ UC table tags) and the property level (→ UC column tags), mixing
+# key-only (bare string) and key-value ("key:value") forms.
+TAGGED_CONTRACT = textwrap.dedent(
+    """
+    version: "1.0.0"
+    apiVersion: v3.0.2
+    kind: DataContract
+    id: 77777777-7777-7777-7777-777777777777
+    status: active
+    name: tagged-contract
+    schema:
+      - name: orders
+        physicalType: table
+        tags:
+          - "domain:sales"
+          - pii
+        properties:
+          - name: order_id
+            logicalType: integer
+            physicalType: BIGINT
+            required: true
+            tags:
+              - "semantic:identifier"
           - name: status
             logicalType: string
     """
@@ -344,14 +387,17 @@ class TestCloudfilesLoadResolution:
 
 
 class TestWriteResolution:
-    def test_injects_table_schema_into_write_target(self, tmp_path, resolver):
+    def test_injects_inline_table_schema_into_write_target(self, tmp_path, resolver):
+        # table_schema is now an inline structured schema dict (not a DDL string)
+        # so per-column UC tags can ride along; it resolves to the same DDL at
+        # generation time.
         _write_contract(tmp_path)
         fg = _flowgroup(_write_action())
 
         result = resolver.resolve(fg, project_root=tmp_path)
 
         action = result["actions"][0]
-        assert action["write_target"]["table_schema"] == EXPECTED_DDL
+        assert action["write_target"]["table_schema"] == EXPECTED_WRITE_SCHEMA
         assert "contract" not in action
 
     def test_materialized_view_target_also_resolved(self, tmp_path, resolver):
@@ -363,13 +409,13 @@ class TestWriteResolution:
         result = resolver.resolve(fg, project_root=tmp_path)
 
         out = result["actions"][0]
-        assert out["write_target"]["table_schema"] == EXPECTED_DDL
+        assert out["write_target"]["table_schema"] == EXPECTED_WRITE_SCHEMA
         assert "contract" not in out
 
     def test_table_schema_always_uses_contract_name_not_physical(
         self, tmp_path, resolver
     ):
-        # The write target defines the table, so table_schema stays on the
+        # The write target defines the table, so table_schema columns stay on the
         # contract `name` even when a property carries a differing physicalName.
         _write_contract(tmp_path, RENAME_CONTRACT)
         fg = _flowgroup(_write_action())
@@ -377,9 +423,53 @@ class TestWriteResolution:
         result = resolver.resolve(fg, project_root=tmp_path)
 
         action = result["actions"][0]
-        assert (
-            action["write_target"]["table_schema"]
-            == "order_id BIGINT NOT NULL, status STRING"
+        columns = action["write_target"]["table_schema"]["columns"]
+        assert [c["name"] for c in columns] == ["order_id", "status"]
+
+    def test_maps_odcs_tags_to_table_and_column_uc_tags(self, tmp_path, resolver):
+        # Object-level ODCS tags → write_target.tags; property-level → columns[].tags.
+        # "key:value" splits on the first colon; a bare string is key-only.
+        _write_contract(tmp_path, TAGGED_CONTRACT)
+        fg = _flowgroup(_write_action())
+
+        result = resolver.resolve(fg, project_root=tmp_path)
+
+        target = result["actions"][0]["write_target"]
+        assert target["tags"] == {"domain": "sales", "pii": ""}
+
+        columns = {c["name"]: c for c in target["table_schema"]["columns"]}
+        assert columns["order_id"]["tags"] == {"semantic": "identifier"}
+        # A property without ODCS tags carries no `tags` key (stays unmanaged).
+        assert "tags" not in columns["status"]
+
+    def test_explicit_write_target_tags_win_over_contract_tags(
+        self, tmp_path, resolver
+    ):
+        # Contract table tags merge into an explicit write_target.tags; on a key
+        # collision the user's explicit value wins.
+        _write_contract(tmp_path, TAGGED_CONTRACT)
+        action = _write_action()
+        action["write_target"]["tags"] = {"domain": "override", "owner": "data-eng"}
+        fg = _flowgroup(action)
+
+        result = resolver.resolve(fg, project_root=tmp_path)
+
+        assert result["actions"][0]["write_target"]["tags"] == {
+            "domain": "override",  # explicit wins
+            "pii": "",  # from contract
+            "owner": "data-eng",  # explicit-only
+        }
+
+    def test_no_tags_key_when_contract_has_no_tags(self, tmp_path, resolver):
+        _write_contract(tmp_path)  # SINGLE_OBJECT_CONTRACT has no tags
+        fg = _flowgroup(_write_action())
+
+        result = resolver.resolve(fg, project_root=tmp_path)
+
+        target = result["actions"][0]["write_target"]
+        assert "tags" not in target
+        assert all(
+            "tags" not in c for c in target["table_schema"]["columns"]
         )
 
 

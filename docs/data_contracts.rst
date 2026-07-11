@@ -25,7 +25,8 @@ What a contract drives is **implicit from the action type**:
        ``cloudFiles.schemaHints`` **instead** when ``schema_hints: true``
        (hints-only; never both)
    * - **write** (``streaming_table`` / ``materialized_view``)
-     - ``write_target.table_schema`` (inline DDL)
+     - ``write_target.table_schema`` (inline structured schema) plus UC ``tags``
+       (table- and column-level) from the contract's ODCS ``tags``
    * - ``schema`` **transform**
      - ``schema_inline`` (cast-only ``<col>: <type>`` entries)
    * - ``data_quality`` **transform**
@@ -180,6 +181,39 @@ A contract on a ``streaming_table`` or ``materialized_view`` write injects
          table: customer
        contract:
          file: contracts/customer.odcs.yaml
+
+The injected ``table_schema`` is an **inline structured schema** (a mapping with a
+``columns`` list). This resolves to the same table DDL at code-generation time,
+but the structured form lets per-column UC tags travel with the schema.
+
+Contract tags → Unity Catalog tags
+"""""""""""""""""""""""""""""""""""
+
+ODCS ``tags`` (an array of strings, allowed on both schema objects and properties) are
+translated into :doc:`Unity Catalog tags <actions/write_actions>` on the write:
+object-level tags become **table** tags (``write_target.tags``) and property-level tags
+become **column** tags (``columns[].tags`` inside the inline ``table_schema``). Both are
+consumed by the UC tagging hook.
+
+Each tag string uses a ``"key:value"`` convention: a bare string (no colon) becomes a
+**key-only** tag, while a ``"key:value"`` string is split on the **first** colon into a
+key/value pair (so values may contain further colons). Surrounding whitespace is stripped
+from both sides. Because UC tag **keys may not contain** ``. , - = / :``, a colon in the
+string is always treated as the key/value separator — it cannot appear in a key.
+
+.. code-block:: yaml
+   :caption: contracts/customer.odcs.yaml
+
+   schema:
+     - name: customer
+       tags: ["domain:master_data", "pii"]     # → table tags {domain: master_data, pii: ""}
+       properties:
+         - name: email
+           physicalType: STRING
+           tags: ["pii:email", "confidential"]  # → column tags {pii: email, confidential: ""}
+
+Contract-derived table tags **merge** into any explicit ``write_target.tags``; on a key
+collision the explicitly declared value wins.
 
 In a ``schema`` transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

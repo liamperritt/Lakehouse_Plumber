@@ -109,6 +109,34 @@ def odcs_type_to_spark(prop: Dict[str, Any]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Tag mapping  (ODCS `tags` array -> Unity Catalog tag mapping)
+# ---------------------------------------------------------------------------
+
+
+def odcs_tags_to_uc(element: Dict[str, Any]) -> Dict[str, str]:
+    """Map an ODCS element's ``tags`` array to a Unity Catalog tag mapping.
+
+    ODCS ``tags`` is an array of strings, present on both schema objects (→ table
+    tags) and properties (→ column tags). Each entry is interpreted with a
+    ``"key:value"`` convention: a string with no colon becomes a key-only tag
+    (``"pii"`` → ``{"pii": ""}``), while a string with a colon is split on the
+    **first** colon into a key/value pair (``"domain:sales"`` →
+    ``{"domain": "sales"}``; ``"note:a:b"`` → ``{"note": "a:b"}``). Both sides are
+    stripped of surrounding whitespace (UC rejects leading/trailing whitespace).
+
+    Returns ``{}`` when ``tags`` is absent or empty. Order-preserving; a later
+    entry with the same key overwrites an earlier one. The resulting keys/values
+    are validated against UC's charset/length rules downstream by the tagging
+    hook generator (``LHP-CFG-066``).
+    """
+    result: Dict[str, str] = {}
+    for tag in element.get("tags") or []:
+        key, sep, value = str(tag).partition(":")
+        result[key.strip()] = value.strip() if sep else ""
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Constraint mapping  (ODCS property -> data_quality expectation predicates)
 # ---------------------------------------------------------------------------
 
