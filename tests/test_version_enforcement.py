@@ -60,6 +60,25 @@ required_lhp_version: ">=0.4.0,<0.5.0"
                 == ">=0.4.0,<0.5.0"
             )
 
+    def test_dev_prerelease_version_satisfies_requirement(self, tmp_path):
+        """A dev/pre-release build (e.g. 0.9.1.dev0) is evaluated by numeric
+        comparison, not excluded outright as SpecifierSet does by default."""
+        lhp_yaml = tmp_path / "lhp.yaml"
+        lhp_yaml.write_text("""
+name: test_project
+version: "1.0"
+required_lhp_version: ">=0.5.0"
+""")
+
+        with patch(
+            "lhp.core.coordination.orchestrator.get_version",
+            return_value="0.9.1.dev0",
+        ):
+            facade = LakehousePlumberApplicationFacade.for_project(tmp_path)
+            assert (
+                facade._orchestrator.project_config.required_lhp_version == ">=0.5.0"
+            )
+
     def test_non_matching_version_requirement_fails(self, tmp_path):
         """Test that non-matching version requirement raises LHPError."""
         lhp_yaml = tmp_path / "lhp.yaml"

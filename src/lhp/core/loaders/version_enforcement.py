@@ -64,7 +64,10 @@ def enforce_version_requirements(
         spec_set = SpecifierSet(required_spec)
         actual_ver = Version(actual_version)
 
-        if actual_ver not in spec_set:
+        # ``prereleases=True`` so a dev/pre-release build of LHP itself (e.g.
+        # ``0.9.1.dev0``) is evaluated by numeric comparison rather than being
+        # excluded outright — SpecifierSet drops pre-releases by default.
+        if not spec_set.contains(actual_ver, prereleases=True):
             raise ErrorFactory.config_error(
                 codes.CFG_007,
                 title="LakehousePlumber version requirement not satisfied",

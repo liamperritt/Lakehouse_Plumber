@@ -616,7 +616,7 @@ wheels = [
 
 [[package]]
 name = "lakehouse-plumber"
-version = "0.9.1"
+version = "0.9.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
