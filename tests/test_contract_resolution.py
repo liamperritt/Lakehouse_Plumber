@@ -213,6 +213,37 @@ TAGGED_CONTRACT = textwrap.dedent(
 ).strip()
 
 
+# A single-object ``orders`` contract that also lists two LHP operational-metadata
+# columns: ``_processing_timestamp`` (cast-only) and ``_source_file_path`` (with a
+# differing ``physicalName``, so a naive translation would emit a column_mapping rename).
+OPERATIONAL_METADATA_CONTRACT = textwrap.dedent(
+    """
+    version: "1.0.0"
+    apiVersion: v3.0.2
+    kind: DataContract
+    id: 88888888-8888-8888-8888-888888888888
+    status: active
+    name: om-contract
+    schema:
+      - name: orders
+        physicalType: table
+        properties:
+          - name: order_id
+            logicalType: integer
+            physicalType: BIGINT
+            required: true
+          - name: status
+            logicalType: string
+          - name: _processing_timestamp
+            logicalType: timestamp
+            physicalType: TIMESTAMP
+          - name: _source_file_path
+            physicalName: file_path
+            logicalType: string
+    """
+).strip()
+
+
 def _write_contract(root: Path, content: str = SINGLE_OBJECT_CONTRACT) -> Path:
     """Write the contract under ``<root>/contracts/sales.odcs.yaml`` and return it."""
     contracts_dir = root / "contracts"
@@ -533,6 +564,46 @@ class TestSchemaTransformResolution:
             "type_casting": {"order_id": "BIGINT", "status": "STRING"},
         }
         assert "contract" not in action
+
+    def test_operational_metadata_columns_excluded_from_schema_inline(self, tmp_path):
+        # A resolver configured with the project's operational-metadata column
+        # names drops those columns from the translated schema_inline entirely —
+        # both the cast (_processing_timestamp) and, crucially, the rename of a
+        # metadata column with a differing physicalName (_source_file_path).
+        resolver = ContractResolver(
+            operational_metadata_columns={"_processing_timestamp", "_source_file_path"}
+        )
+        _write_contract(tmp_path, OPERATIONAL_METADATA_CONTRACT)
+        fg = _flowgroup(_schema_transform_action())
+
+        result = resolver.resolve(fg, project_root=tmp_path)
+
+        action = result["actions"][0]
+        # Only the real data columns remain; no column_mapping (order_id/status
+        # have no differing physicalName) and no metadata columns anywhere.
+        assert yaml.safe_load(action["schema_inline"]) == {
+            "type_casting": {"order_id": "BIGINT", "status": "STRING"}
+        }
+        assert "contract" not in action
+
+    def test_default_resolver_keeps_metadata_named_columns(self, tmp_path, resolver):
+        # Backward compatible: with no operational-metadata names supplied, columns
+        # that happen to be named like metadata columns are still translated.
+        _write_contract(tmp_path, OPERATIONAL_METADATA_CONTRACT)
+        fg = _flowgroup(_schema_transform_action())
+
+        result = resolver.resolve(fg, project_root=tmp_path)
+
+        action = result["actions"][0]
+        assert yaml.safe_load(action["schema_inline"]) == {
+            "column_mapping": {"file_path": "_source_file_path"},
+            "type_casting": {
+                "order_id": "BIGINT",
+                "status": "STRING",
+                "_processing_timestamp": "TIMESTAMP",
+                "_source_file_path": "STRING",
+            },
+        }
 
 
 class TestDataQualityResolution:

@@ -56,6 +56,7 @@ def build_facade_orchestrator(
         config_validator=config_validator,
         secret_validator=secret_validator,
         project_root=project_root,
+        project_config=project_config,
     )
 
     return ActionOrchestrator(

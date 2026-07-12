@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import yaml
 
@@ -46,10 +46,17 @@ logger = logging.getLogger(__name__)
 class ContractResolver:
     """Rewrite actions that carry a ``contract`` field into inline artifacts."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, operational_metadata_columns: Optional[Iterable[str]] = None
+    ) -> None:
         self._parser = OdcsParser()
         self._translator = OdcsTranslator()
         self._schema_parser = SchemaParser()
+        # Names of the project's operational-metadata columns. A contract column
+        # matching one of these is LHP-injected at the load/view level and must
+        # not be renamed/cast by a schema transform, so it is dropped from the
+        # translated ``schema_inline`` (see ``_inject_schema_transform``).
+        self._om_columns: frozenset[str] = frozenset(operational_metadata_columns or ())
         # Cache parsed contracts per resolved path (avoid re-parsing the same
         # file once per contract-bearing action).
         self._parse_cache: Dict[Path, Dict[str, Any]] = {}
@@ -455,10 +462,16 @@ class ContractResolver:
         # including ones with spaces or other non-identifier characters — works.
         # Rename (column_mapping) only when a property's physicalName differs from
         # its contract name; cast (type_casting) every column to its contract type.
+        # Operational-metadata columns (LHP-injected at the load/view level) are
+        # skipped entirely: they flow through the schema transform untouched and
+        # must not be renamed or cast, so they never enter the translated
+        # ``schema_inline``.
         column_mapping: Dict[str, str] = {}
         type_casting: Dict[str, str] = {}
         for col in schema_columns:
             name = col["name"]
+            if name in self._om_columns:
+                continue
             src = col.get("physical_name")
             if src and src != name:
                 column_mapping[src] = name

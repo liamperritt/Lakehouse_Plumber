@@ -38,12 +38,14 @@ class FlowgroupResolutionService(BaseFlowgroupResolutionService):
         config_validator=None,
         secret_validator=None,
         project_root=None,
+        project_config=None,
     ):
         self.template_engine = template_engine
         self.preset_manager = preset_manager
         self.config_validator = config_validator
         self.secret_validator = secret_validator
         self.project_root = project_root
+        self.project_config = project_config
         self.logger = logging.getLogger(__name__)
 
     def resolve(
@@ -197,9 +199,14 @@ class FlowgroupResolutionService(BaseFlowgroupResolutionService):
         with perf_timer(f"contract_resolve [{fg}]", category="contract_resolve"):
             from .contract_resolver import ContractResolver
 
-            substituted_dict = ContractResolver().resolve(
-                substituted_dict, project_root=self.project_root
-            )
+            # Operational-metadata column names (mirrors the schema-transform
+            # generator's source of truth) so contract → schema-transform
+            # translation drops LHP-injected metadata columns.
+            om = getattr(self.project_config, "operational_metadata", None)
+            metadata_cols = set(om.columns) if om and om.columns else set()
+            substituted_dict = ContractResolver(
+                operational_metadata_columns=metadata_cols
+            ).resolve(substituted_dict, project_root=self.project_root)
 
         processed_flowgroup = FlowGroup(**substituted_dict)
 
