@@ -154,7 +154,7 @@ class UCTaggingHookGenerator:
         return text
 
     # UC tag KEYS may not contain any of these six characters.
-    _KEY_PROHIBITED_CHARS = ".,-=/:"
+    _KEY_PROHIBITED_CHARS = ",-=:"
     _TAG_MAX_LEN = 256
 
     def _normalize_tags(

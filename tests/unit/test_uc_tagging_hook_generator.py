@@ -482,6 +482,14 @@ class TestUCTaggingTagValidation:
             _build([action], root=tmp_path)
         assert exc_info.value.code == "LHP-CFG-066"
 
+    @pytest.mark.parametrize("key", ["my.tag.key", "path/to/key", "a.b/c"])
+    def test_key_with_dot_or_slash_is_allowed(self, tmp_path, key):
+        # '.' and '/' are valid characters in Unity Catalog tag keys, so they
+        # must NOT raise LHP-CFG-066 and must be embedded verbatim in the hook.
+        action = _write_action(write_target=_st_target(tags={key: "x"}))
+        content = _build([action], root=tmp_path)[HOOK_FILENAME]
+        assert repr(key) in content
+
     def test_value_with_leading_space_raises(self, tmp_path):
         action = _write_action(write_target=_st_target(tags={"team": " data-eng"}))
         with pytest.raises(LHPError) as exc_info:

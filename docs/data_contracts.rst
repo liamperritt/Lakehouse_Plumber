@@ -198,7 +198,7 @@ consumed by the UC tagging hook.
 Each tag string uses a ``"key:value"`` convention: a bare string (no colon) becomes a
 **key-only** tag, while a ``"key:value"`` string is split on the **first** colon into a
 key/value pair (so values may contain further colons). Surrounding whitespace is stripped
-from both sides. Because UC tag **keys may not contain** ``. , - = / :``, a colon in the
+from both sides. Because UC tag **keys may not contain** ``, - = :``, a colon in the
 string is always treated as the key/value separator — it cannot appear in a key.
 
 .. code-block:: yaml
